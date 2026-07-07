@@ -168,7 +168,7 @@ See [`docs/architecture.md`](docs/architecture.md) and the
 | `log_event(type, content, importance?, supersedes?, supersedes_query?, project?)` | As work happens — record goals, decisions, dead-ends, files, questions, next steps. `supersedes` retires a prior event by id; `supersedes_query` retires the best-matching active event of the same type when you don't have its id ([ADR-0007](docs/adr/0007-supersede-by-best-match.md)). |
 | `search_memory(query, scope=current\|all, limit?)` | When the user references past or other-project work. `limit` caps the number of results (default 10). Each hit includes the event id, feedable straight into `log_event`'s `supersedes`. |
 | `note_entity(name, content, project?)` | To record durable project knowledge (architecture, conventions, components). |
-| `checkpoint(summary?)` | At session end — finalise the session and emit the brief. |
+| `checkpoint(summary?, project?)` | At session end — finalise the session and emit the brief. Pass the same `project` you logged under (defaults to the session's project). |
 | `consolidate(project?, older_than_days?)` | To compress old sessions into durable notes (opt-in, needs an LLM). |
 | `sync(remote_url?)` | To sync memory across devices — pull, commit, and push the vault's private git remote (opt-in). First call with a repo URL configures it; then a bare call syncs. See [Multi-device sync](#multi-device-sync-optional). |
 
