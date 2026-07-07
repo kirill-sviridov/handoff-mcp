@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtualenv / uv
+.venv/
+.venv*/
+# uv.lock IS committed: CI runs `uv lock --check` and the package is published to
+# PyPI, so the resolved lockfile belongs in the repo for reproducible builds.
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local vault / derived index (runtime data, never source of truth in repo)
+*.handoff-vault/
+*.db
+*.db-shm
+*.db-wal
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,12 @@
+# Normalise line endings: LF in the repo for all text, regardless of OS.
+* text=auto eol=lf
+
+*.py   text eol=lf
+*.md   text eol=lf
+*.toml text eol=lf
+*.yml  text eol=lf
+*.txt  text eol=lf
+
+# Binary
+*.gif  binary
+*.png  binary
