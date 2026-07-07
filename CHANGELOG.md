@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] — 2026-07-07
+
+### Fixed
+- `checkpoint` now accepts a `project` parameter, mirroring the other memory
+  tools (`log_event`, `get_brief`, `note_entity`, `consolidate`). Previously it
+  used the session's default project unconditionally, so a session that logged
+  its work under `project="X"` left that session note open and returned the
+  wrong (empty default) brief.
+
 ## [0.3.0] — 2026-07-07
 
 ### Added

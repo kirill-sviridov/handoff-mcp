@@ -222,7 +222,7 @@ class HandoffEngine:
                 imported += 1
         return imported
 
-    def checkpoint(self, summary: str | None = None) -> Brief:
+    def checkpoint(self, summary: str | None = None, project: str | None = None) -> Brief:
         """Close out the current session and return its hand-off brief.
 
         Marks the session note ``done`` (optionally with a human summary) and
@@ -230,16 +230,22 @@ class HandoffEngine:
         nothing was ever logged this session, there is no note to close — it was
         never created (see ``__init__``) — so this is a plain no-op read of the
         brief rather than writing an empty, immediately-``done`` session file.
+
+        ``project`` defaults to the session's project but may name another
+        namespace: a session that logged its work with ``project="other"`` (see
+        ``log_event``) must be closed there, not under the default project — else
+        the note is left open and the returned brief is the wrong (empty) one.
         """
 
-        path = self.vault.session_path(self.config.project, self.config.session_id)
+        proj = project or self.config.project
+        path = self.vault.session_path(proj, self.config.session_id)
         if path.exists():
-            meta, _ = self.vault.read_session(self.config.project, self.config.session_id)
+            meta, _ = self.vault.read_session(proj, self.config.session_id)
             meta.status = "done"
             if summary:
                 meta.summary = summary
             self.vault.update_session_meta(meta)
-        return self.get_brief()
+        return self.get_brief(project=proj)
 
     def get_brief(
         self,

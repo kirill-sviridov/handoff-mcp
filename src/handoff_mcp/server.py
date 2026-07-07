@@ -225,6 +225,17 @@ def create_server(engine: HandoffEngine) -> FastMCP:
             str | None,
             Field(description="Optional one-line human summary of what this session accomplished."),
         ] = None,
+        project: Annotated[
+            str | None,
+            Field(
+                description=(
+                    "Project namespace to close; defaults to the current session's project. "
+                    "Pass the SAME project you logged events under — a session that logged "
+                    "with project='X' must be checkpointed with project='X', or its note is "
+                    "left open and the returned brief is the wrong (empty default) one."
+                )
+            ),
+        ] = None,
     ) -> str:
         """Close out the current session and produce its hand-off brief.
 
@@ -233,7 +244,7 @@ def create_server(engine: HandoffEngine) -> FastMCP:
         the brief the next session will read.
         """
 
-        brief = engine.checkpoint(summary=summary)
+        brief = engine.checkpoint(summary=summary, project=project)
         if engine.config.auto_sync:
             # Best-effort: auto-sync must never block or fail a session.
             with contextlib.suppress(Exception):

@@ -1,6 +1,6 @@
 [project]
 name = "handoff-mcp"
-version = "0.3.0"
+version = "0.3.1"
 description = "Persistent cross-session memory and structured hand-off for Claude, exposed over the Model Context Protocol."
 readme = "README.md"
 requires-python = ">=3.10"
