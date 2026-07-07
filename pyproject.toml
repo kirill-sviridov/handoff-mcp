@@ -1,11 +1,11 @@
 [project]
 name = "handoff-mcp"
-version = "0.3.1"
+version = "0.3.2"
 description = "Persistent cross-session memory and structured hand-off for Claude, exposed over the Model Context Protocol."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Solrange", email = "solrangeroom@gmail.com" }]
+authors = [{ name = "Kirill Sviridov", email = "solrangeroom@gmail.com" }]
 keywords = ["mcp", "claude", "memory", "llm", "agent", "handoff"]
 classifiers = [
     "Development Status :: 3 - Alpha",
