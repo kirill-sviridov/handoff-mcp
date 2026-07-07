@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: py${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          # Smoke-test the markdown/path handling on Windows too.
+          - os: windows-latest
+            python-version: "3.12"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Check the lockfile is in sync with pyproject.toml
+        run: uv lock --check
+
+      - name: Install project into a venv
+        run: |
+          uv venv --python ${{ matrix.python-version }}
+          uv pip install -e ".[dev]"
+
+      - name: Ruff (lint + format check)
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+
+      - name: Mypy (strict)
+        run: uv run --no-sync mypy
+
+      - name: Pytest
+        run: uv run --no-sync pytest
+
+      - name: Benchmark smoke run
+        run: |
+          uv run --no-sync python benchmarks/brief_reconstruction.py
+          uv run --no-sync python benchmarks/supersession_benchmark.py
+
+  tool-surface:
+    name: MCP tool-surface smoke gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install project into a venv
+        run: |
+          uv venv --python 3.12
+          uv pip install -e .
+
+      # Drive the real MCP JSON-RPC surface through the Inspector and assert the
+      # schemas + annotations clients depend on. Inspector is pinned so this gate
+      # tracks *our* contract, not upstream churn. tools/list needs no provider —
+      # just a writable vault dir (the server's ensure_dirs() creates it).
+      - name: Assert tool schemas + annotations (MCP Inspector)
+        env:
+          HANDOFF_VAULT: ${{ runner.temp }}/handoff-vault
+        run: |
+          npx --yes @modelcontextprotocol/inspector@0.22.0 --cli \
+            uv run --no-sync handoff-mcp --method tools/list \
+            | python scripts/check_tool_surface.py

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.kirill-sviridov/handoff-mcp",
+  "title": "Handoff",
+  "description": "Persistent cross-session memory and structured hand-off for Claude: prioritised briefs, temporal supersession, cross-project recall.",
+  "websiteUrl": "https://github.com/kirill-sviridov/handoff-mcp",
+  "repository": {
+    "url": "https://github.com/kirill-sviridov/handoff-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "handoff-mcp",
+      "version": "0.3.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "HANDOFF_VAULT",
+          "description": "Path to the shared markdown vault (one vault across all projects).",
+          "isRequired": false,
+          "default": "~/.handoff-mcp/vault"
+        },
+        {
+          "name": "HANDOFF_PROJECT",
+          "description": "Project namespace for this agent/repo within the shared vault.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

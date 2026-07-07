@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 660" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <!-- card background (readable on light & dark GitHub) -->
+  <rect x="0" y="0" width="880" height="660" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+
+  <text x="440" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">handoff-mcp — architecture</text>
+  <text x="440" y="62" text-anchor="middle" font-size="13" fill="#64748b">markdown vault is the source of truth · SQLite index is a rebuildable accelerator</text>
+
+  <!-- Claude -->
+  <rect x="300" y="86" width="280" height="56" rx="10" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="440" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#3730a3">Claude</text>
+  <text x="440" y="131" text-anchor="middle" font-size="11" fill="#4f46e5">decides when to call the tools (no server-side push)</text>
+
+  <!-- write/read arrows -->
+  <line x1="370" y1="142" x2="370" y2="196" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="356" y="172" text-anchor="end" font-size="10.5" fill="#475569">log_event</text>
+  <text x="356" y="186" text-anchor="end" font-size="10.5" fill="#475569">checkpoint · note_entity</text>
+
+  <line x1="510" y1="196" x2="510" y2="142" stroke="#0d9488" stroke-width="1.6" marker-end="url(#arrowGreen)"/>
+  <text x="524" y="172" font-size="10.5" fill="#0f766e">get_brief</text>
+  <text x="524" y="186" font-size="10.5" fill="#0f766e">search_memory</text>
+
+  <!-- server layer -->
+  <rect x="120" y="198" width="640" height="74" rx="10" fill="#f8fafc" stroke="#94a3b8"/>
+  <text x="140" y="222" font-size="14" font-weight="700" fill="#0f172a">server.py — FastMCP adapter</text>
+  <text x="140" y="242" font-size="11.5" fill="#475569">tools: log_event · get_brief · search_memory · checkpoint · note_entity · consolidate</text>
+  <text x="140" y="260" font-size="11.5" fill="#475569">resource: session://brief        prompt: resume</text>
+
+  <line x1="440" y1="272" x2="440" y2="296" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- engine layer -->
+  <rect x="120" y="298" width="640" height="60" rx="10" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="140" y="322" font-size="14" font-weight="700" fill="#0f172a">engine.py — HandoffEngine (transport-free core)</text>
+  <text x="140" y="342" font-size="11.5" fill="#475569">owns the session · wires vault + index · supersession &amp; budget · optional LLM consolidation</text>
+
+  <!-- storage: two columns -->
+  <line x1="300" y1="358" x2="300" y2="392" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="580" y1="392" x2="580" y2="358" stroke="#0d9488" stroke-width="1.6" marker-end="url(#arrowGreen)"/>
+
+  <!-- vault -->
+  <rect x="120" y="394" width="300" height="118" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+  <text x="135" y="418" font-size="14" font-weight="700" fill="#065f46">Markdown vault — source of truth</text>
+  <text x="135" y="439" font-size="11.5" fill="#047857">sessions/ + archive/ — episodic log</text>
+  <text x="135" y="457" font-size="11.5" fill="#047857">entities/&lt;Name&gt;.md — durable knowledge</text>
+  <text x="135" y="475" font-size="11.5" fill="#047857">[[wiki-links]] across projects (Obsidian)</text>
+  <text x="135" y="497" font-size="11" fill="#059669" font-style="italic">human-readable · portable · auditable</text>
+
+  <!-- index -->
+  <rect x="460" y="394" width="300" height="118" rx="10" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="475" y="418" font-size="14" font-weight="700" fill="#1e40af">SQLite + FTS5 — derived index</text>
+  <text x="475" y="439" font-size="11.5" fill="#1d4ed8">reranked recall (recency + importance)</text>
+  <text x="475" y="457" font-size="11.5" fill="#1d4ed8">full-text search (bm25), cross-project</text>
+  <text x="475" y="475" font-size="11.5" fill="#1d4ed8">temporal / supersession queries</text>
+  <text x="475" y="497" font-size="11" fill="#2563eb" font-style="italic">+ optional sqlite-vec semantic recall</text>
+
+  <!-- rebuild arrow vault -> index -->
+  <path d="M420,452 C440,452 440,452 458,452" stroke="#10b981" stroke-width="1.6" fill="none" marker-end="url(#arrowGreen)"/>
+  <text x="440" y="385" text-anchor="middle" font-size="10.5" fill="#059669">incremental sync →</text>
+
+  <!-- pure logic footer -->
+  <rect x="120" y="536" width="640" height="86" rx="10" fill="#fafafa" stroke="#cbd5e1"/>
+  <text x="140" y="560" font-size="13" font-weight="700" fill="#0f172a">pure logic &amp; schemas</text>
+  <text x="140" y="581" font-size="11.5" fill="#475569">supersession.py — retracted decisions excluded from briefs &amp; recall</text>
+  <text x="140" y="599" font-size="11.5" fill="#475569">brief.py — deterministic, graph-aware brief   ·   search.py — keyword|semantic|hybrid + rerank</text>
+  <text x="140" y="617" font-size="11.5" fill="#475569">models.py · config.py   ·   optional: embeddings.py · semantic.py · summarizer.py · importers.py</text>
+</svg>
