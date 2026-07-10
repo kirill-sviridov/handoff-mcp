@@ -33,7 +33,7 @@ memory stores (mem0 / OpenMemory style):
    push-on-checkpoint, conflict-free entity merges) with zero vendor lock. See
    [Multi-device sync](#multi-device-sync-optional).
 
-> **Status: v0.2, early.** The core (vault, brief, supersession, keyword search,
+> **Status: v0.3, early.** The core (vault, brief, supersession, keyword search,
 > cross-project recall) is tested and stable; the semantic, consolidation,
 > importer, and multi-device sync layers are optional and newer. It leans on the agent calling the tools
 > at the right moments — see [Limitations](#limitations) for the honest edges.
@@ -446,7 +446,7 @@ automatically even without the skill:
 
 ## Limitations
 
-Honest edges of v0.2, so you know what you're adopting:
+Honest edges of v0.3, so you know what you're adopting:
 
 - **Supersession is explicit, not inferred.** handoff-mcp never decides on its own
   that one memory retires another — the agent must say so, via `supersedes` (by id)
