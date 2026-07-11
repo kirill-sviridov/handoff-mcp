@@ -96,6 +96,7 @@ def build_brief(
     token_budget: int,
     entity_summary: Callable[[str], str] | None = None,
     retired_ids: set[str] | None = None,
+    stale_session_ids: set[str] | None = None,
 ) -> Brief:
     """Assemble a prioritised, budget-bounded brief for ``project``.
 
@@ -106,6 +107,13 @@ def build_brief(
     ``retired_ids`` is a precomputed set of superseded event ids (resolved
     globally across projects). When omitted, supersession is computed from the
     passed events alone — fine when ``events`` already spans every relevant event.
+
+    ``stale_session_ids`` is the set of session ids whose sessions are finished
+    (``status == "done"``). ``next_step`` events that are still active but come
+    from one of these sessions are flagged via ``Brief.stale_event_ids`` — they
+    survived (nothing newer superseded them) but the session that logged them is
+    over, so they may no longer reflect the actual next step. When omitted
+    (``None``), no events are marked.
     """
 
     materialised = list(events)
@@ -155,6 +163,14 @@ def build_brief(
         else []
     )
 
+    stale_ids = [
+        ev.id
+        for ev in kept
+        if ev.type == EventType.NEXT_STEP
+        and stale_session_ids is not None
+        and ev.session_id in stale_session_ids
+    ]
+
     brief = Brief(
         project=project,
         token_budget=token_budget,
@@ -162,6 +178,7 @@ def build_brief(
         sections=sections,
         related_entities=related,
         dropped=dropped,
+        stale_event_ids=stale_ids,
     )
     brief.estimated_tokens = estimate_tokens(render_brief(brief))
     return brief
@@ -178,7 +195,8 @@ def render_brief(brief: Brief) -> str:
     for section in brief.sections:
         lines.append(f"## {section.title}")
         for ev in section.events:
-            lines.append(f"- {snippet(ev.content)}")
+            marker = " _(possibly stale)_" if ev.id in brief.stale_event_ids else ""
+            lines.append(f"- {snippet(ev.content)}{marker}")
         lines.append("")
 
     if brief.related_entities:

@@ -1,6 +1,6 @@
 [project]
 name = "handoff-mcp"
-version = "0.3.2"
+version = "0.4.0"
 description = "Persistent cross-session memory and structured hand-off for Claude, exposed over the Model Context Protocol."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -44,6 +44,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.6",
     "mypy>=1.10",
+    "tomli; python_version < '3.11'",
 ]
 
 [project.scripts]
@@ -85,6 +86,10 @@ plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = ["sqlite_vec.*", "openai.*", "sentence_transformers.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tomli", "tomllib"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

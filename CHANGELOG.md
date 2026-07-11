@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-07-11
+
+### Added
+- **Claude Code plugin.** The repo is now a plugin marketplace: install with
+  `/plugin marketplace add kirill-sviridov/handoff-mcp` then
+  `/plugin install handoff-mcp@handoff-mcp`. Bundles the MCP server (via
+  `uvx`, auto-installed from PyPI), a SessionStart hook that loads the memory
+  protocol every session, and the `session-handoff` / `session-planning`
+  skills. Requires `uv` on PATH. Known limitation: the hook uses a POSIX
+  `cat`; Windows shells are untested.
+- **Project namespace from cwd.** When `HANDOFF_PROJECT` is unset, the project
+  defaults to the git-root (else cwd) basename instead of `default`, so every
+  repo gets its own namespace with zero config. At the home directory or
+  filesystem root the old `default` is kept.
+
+### Changed
+- **Behavior change:** users who relied on the implicit `default` namespace
+  now write to a per-repo namespace (see above). Old `default` data stays
+  readable: pass `project="default"` or use `search_memory(scope="all")`.
+- **next_step no longer silts up.** Logging a new `next_step` deterministically
+  retires the active next steps of prior sessions in the same project (its
+  `supersedes` list records exactly what it retired — same audit trail as a
+  manual retraction). Same-session next steps coexist. Surviving next steps
+  from finished sessions render as "(possibly stale)" in the brief (ADR-0009).
+
 ## [0.3.2] — 2026-07-07
 
 ### Changed

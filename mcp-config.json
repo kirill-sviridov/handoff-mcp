@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "handoff": {
+      "command": "uvx",
+      "args": ["handoff-mcp"],
+      "env": {}
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "handoff-mcp",
+  "owner": { "name": "Kirill Sviridov" },
+  "description": "Marketplace for the handoff-mcp plugin — persistent cross-session memory for Claude Code.",
+  "plugins": [
+    {
+      "name": "handoff-mcp",
+      "source": "./",
+      "description": "Persistent cross-session memory for Claude over MCP."
+    }
+  ]
+}

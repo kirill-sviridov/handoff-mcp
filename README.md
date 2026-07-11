@@ -33,7 +33,7 @@ memory stores (mem0 / OpenMemory style):
    push-on-checkpoint, conflict-free entity merges) with zero vendor lock. See
    [Multi-device sync](#multi-device-sync-optional).
 
-> **Status: v0.3, early.** The core (vault, brief, supersession, keyword search,
+> **Status: v0.4, early.** The core (vault, brief, supersession, keyword search,
 > cross-project recall) is tested and stable; the semantic, consolidation,
 > importer, and multi-device sync layers are optional and newer. It leans on the agent calling the tools
 > at the right moments — see [Limitations](#limitations) for the honest edges.
@@ -298,6 +298,18 @@ python examples/two_sessions_demo.py
 
 ## Connect your MCP client
 
+**Claude Code — one-minute install (recommended):**
+
+```
+/plugin marketplace add kirill-sviridov/handoff-mcp
+/plugin install handoff-mcp@handoff-mcp
+```
+
+That bundles the server (auto-installed from PyPI via `uvx` — needs `uv` on
+PATH), a session-start hook that loads the memory protocol, and the
+`session-handoff` / `session-planning` skills. Manual setup below is for other
+clients (or if you prefer explicit config).
+
 `handoff-mcp` speaks standard MCP over stdio, so it works with **any** MCP client —
 Claude, Cursor, Codex, Kilo Code, Windsurf, Cline, VS Code, Zed, … The config is
 essentially the same everywhere; only the file location (and, for Codex, the
@@ -349,10 +361,13 @@ HANDOFF_PROJECT = "my-project"
 
 Notes:
 - `handoff-mcp` must be on `PATH` — install it as a tool
-  (`uv tool install git+https://github.com/kirill-sviridov/handoff-mcp`; PyPI release coming)
+  (`uv tool install handoff-mcp`; or from source, `uv tool install
+  git+https://github.com/kirill-sviridov/handoff-mcp`)
   or, from a checkout, use `"command": "python", "args": ["-m", "handoff_mcp.server"]`.
 - Set `HANDOFF_PROJECT` per agent/repo; keep `HANDOFF_VAULT` pointed at the **same
-  shared vault** across all of them (see below).
+  shared vault** across all of them (see below). Since 0.4.0, when `HANDOFF_PROJECT`
+  is unset the project defaults to the git-root/cwd basename, giving per-repo
+  namespaces with zero config; setting it explicitly still wins.
 
 ## Where your memory lives
 
@@ -402,7 +417,7 @@ key); if a push fails, the command tells you exactly what to fix.
 ## Agent integration
 
 *Knowing **when** to use it.* The server never pushes anything to the model; the
-model decides when to call the tools. Three layers make that reliable, from most portable to most capable:
+model decides when to call the tools. Four layers make that reliable, from most portable to most capable:
 
 1. **Tool descriptions** (built in) — every tool says *when* to call it. Works in
    any MCP client.
@@ -435,6 +450,8 @@ model decides when to call the tools. Three layers make that reliable, from most
    handoff-init --client codex  # AGENTS.md   ·   --client cursor / windsurf
    ```
 
+4. **Claude Code plugin** — layers 1-3 in one install; see [Connect your MCP client](#connect-your-mcp-client).
+
 For Claude Code specifically, also add this to your `CLAUDE.md` so the brief loads
 automatically even without the skill:
 
@@ -446,14 +463,14 @@ automatically even without the skill:
 
 ## Limitations
 
-Honest edges of v0.3, so you know what you're adopting:
+Honest edges of v0.4, so you know what you're adopting:
 
 - **Supersession is explicit, not inferred.** handoff-mcp never decides on its own
   that one memory retires another — the agent must say so, via `supersedes` (by id)
   or `supersedes_query` (by best match). That is deliberate (it's what keeps the
   brief deterministic and auditable), but it means the quality of the memory
   depends on the agent actually logging retractions. It won't silently
-  de-duplicate contradictions the way an LLM-extraction store attempts to.
+  de-duplicate contradictions the way an LLM-extraction store attempts to. Exception: `next_step` — a newly logged next step auto-retires prior sessions' active next steps (rule-based, recorded on the event; [ADR-0009](docs/adr/0009-rule-based-next-step-retire.md)). If a retired step was still valid, re-log it.
 - **It depends on the agent's discipline.** The server never pushes anything; value
   comes from the model calling `log_event` / `get_brief` / `checkpoint` at the
   right moments. The tool descriptions and the skill nudge this, but a client that

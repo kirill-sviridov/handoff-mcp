@@ -150,6 +150,13 @@ class Brief(BaseModel):
         description="Durable entity notes the active work links to (graph-aware).",
     )
     dropped: int = Field(default=0, description="Active events omitted due to the budget.")
+    stale_event_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "next_step events from finished sessions — still active (nothing "
+            "newer replaced them) but rendered with a 'possibly stale' marker."
+        ),
+    )
 
     def is_empty(self) -> bool:
         return all(not s.events for s in self.sections)

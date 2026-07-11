@@ -1,15 +1,18 @@
 """Runtime configuration: where the vault lives, the derived index, defaults.
 
 Resolution order for every setting is: explicit constructor argument >
-environment variable > built-in default. This makes the server trivial to wire
-into a Claude Code / Claude Desktop MCP config block while staying fully
-injectable from tests.
+environment variable > built-in default (for ``project``: the git-root/cwd
+basename, falling back to ``default`` at home/root). This makes the server
+trivial to wire into a Claude Code / Claude Desktop MCP config block while
+staying fully injectable from tests.
 """
 
 from __future__ import annotations
 
 import os
+import re
 import secrets
+import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,6 +43,61 @@ def _default_vault() -> Path:
     return Path.home() / ".handoff-mcp" / "vault"
 
 
+# Bound the git call so a hung filesystem can never stall server startup.
+_GIT_TIMEOUT_S = 2.0
+
+
+def _git_toplevel_name(cwd: Path) -> str | None:
+    """Basename of the git worktree containing ``cwd``, or None.
+
+    None when: not a git repo, git missing/slow, or the toplevel is the home
+    directory (a dotfiles repo must not leak the username as a project name).
+    """
+
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=_GIT_TIMEOUT_S,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    top = Path(proc.stdout.strip())
+    if not proc.stdout.strip() or top == Path.home():
+        return None
+    return top.name or None
+
+
+def _derive_project_from_cwd() -> str:
+    """Deterministic per-repo namespace when HANDOFF_PROJECT is unset.
+
+    git-root basename > cwd basename; home or filesystem root (how Claude
+    Desktop launches stdio servers) keeps the historical ``default``.
+    """
+
+    try:
+        cwd = Path.cwd()
+    except OSError:  # cwd deleted out from under the process
+        return "default"
+    if cwd == Path.home() or cwd.parent == cwd:
+        return "default"
+    name = _git_toplevel_name(cwd) or cwd.name
+    name = re.sub(r"[\\/\s]+", "-", name).strip(".-")
+    return name or "default"
+
+
+def _default_project() -> str:
+    env = os.environ.get(ENV_PROJECT)
+    if env:
+        return env
+    return _derive_project_from_cwd()
+
+
 def new_session_id() -> str:
     """A sortable-ish, collision-resistant session id.
 
@@ -56,7 +114,7 @@ class HandoffConfig:
     """All knobs the server and stores need."""
 
     vault_path: Path = field(default_factory=_default_vault)
-    project: str = field(default_factory=lambda: os.environ.get(ENV_PROJECT, "default"))
+    project: str = field(default_factory=_default_project)
     session_id: str = field(default_factory=new_session_id)
     token_budget: int = field(
         default_factory=lambda: int(os.environ.get(ENV_TOKEN_BUDGET, DEFAULT_TOKEN_BUDGET))

@@ -137,6 +137,10 @@ class HandoffEngine:
         project, resolved deterministically via the keyword index. The resolved id
         is unioned into ``supersedes`` and persisted, so the retraction is fully
         auditable; if nothing matches, nothing is retired.
+
+        A ``next_step`` additionally auto-retires the active next steps of prior
+        sessions in its project (see ADR-0009) — newest step wins, same-session
+        steps coexist.
         """
 
         proj = project or self.config.project
@@ -145,6 +149,14 @@ class HandoffEngine:
             match = self._resolve_supersedes_query(supersedes_query, proj, type)
             if match is not None and match not in resolved:
                 resolved.append(match)
+
+        # Silting fix: declaring a new next step deterministically retires the
+        # active next steps of PRIOR sessions in this project. Same-session
+        # steps are left alone (a session may track several in parallel), and
+        # the retirement rides the event's own supersedes list — append-only,
+        # auditable, and exactly the mechanism a manual retraction uses.
+        if type == EventType.NEXT_STEP:
+            resolved.extend(self._active_prior_next_steps(proj, exclude=set(resolved)))
 
         event = Event(
             id=new_event_id(),
@@ -184,6 +196,23 @@ class HandoffEngine:
                 continue  # retire like-for-like only
             return hit.event.id
         return None
+
+    def _active_prior_next_steps(self, project: str, exclude: set[str]) -> list[str]:
+        """Ids of active next_step events from earlier sessions of ``project``.
+
+        Sorted for determinism. ``exclude`` skips ids the caller already
+        retires explicitly, so the persisted list holds no duplicates.
+        """
+
+        retired = self.index.all_superseded_ids()
+        return sorted(
+            ev.id
+            for ev in self.index.events_for(project)
+            if ev.type == EventType.NEXT_STEP
+            and ev.id not in retired
+            and ev.id not in exclude
+            and ev.session_id != self.config.session_id
+        )
 
     def note_entity(self, name: str, content: str, project: str | None = None) -> str:
         """Record durable project knowledge on an entity note (Architecture,
@@ -254,12 +283,18 @@ class HandoffEngine:
     ) -> Brief:
         proj = project or self.config.project
         budget = token_budget if token_budget is not None else self.config.token_budget
+        done_sessions = {
+            path.stem
+            for path in self.vault.iter_session_files(proj)
+            if self.vault.read_session(proj, path.stem)[0].status == "done"
+        }
         return build_brief(
             self.index.events_for(proj),
             project=proj,
             token_budget=budget,
             entity_summary=lambda name: self.vault.entity_summary(proj, name),
             retired_ids=self.index.all_superseded_ids(),
+            stale_session_ids=done_sessions,
         )
 
     def search(

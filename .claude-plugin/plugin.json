@@ -1,0 +1,12 @@
+{
+  "name": "handoff-mcp",
+  "version": "0.4.0",
+  "description": "Persistent cross-session memory: prioritised briefs, supersession, cross-project recall.",
+  "author": { "name": "Kirill Sviridov" },
+  "homepage": "https://github.com/kirill-sviridov/handoff-mcp",
+  "license": "MIT",
+  "keywords": ["memory", "handoff", "session", "mcp"],
+  "mcpServers": "./mcp-config.json",
+  "hooks": "./hooks/hooks.json",
+  "skills": "./skills/"
+}
