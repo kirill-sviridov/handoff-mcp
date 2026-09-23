@@ -367,7 +367,13 @@ Notes:
 - Set `HANDOFF_PROJECT` per agent/repo; keep `HANDOFF_VAULT` pointed at the **same
   shared vault** across all of them (see below). Since 0.4.0, when `HANDOFF_PROJECT`
   is unset the project defaults to the git-root/cwd basename, giving per-repo
-  namespaces with zero config; setting it explicitly still wins.
+  namespaces with zero config; setting it explicitly still wins. Under Claude
+  Code the directory is `CLAUDE_PROJECT_DIR` (the session's project) rather than
+  the server's cwd (since 0.4.1).
+- Running from a checkout with uv? Use `uv run --project /path/to/handoff-mcp
+  handoff-mcp`, not `--directory`: `--directory` moves the server's cwd into the
+  checkout, so clients that don't set `CLAUDE_PROJECT_DIR` would file every
+  project under `handoff-mcp`.
 
 ## Where your memory lives
 

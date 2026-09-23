@@ -1,7 +1,7 @@
 """Runtime configuration: where the vault lives, the derived index, defaults.
 
 Resolution order for every setting is: explicit constructor argument >
-environment variable > built-in default (for ``project``: the git-root/cwd
+environment variable > built-in default (for ``project``: the git-root/dir
 basename, falling back to ``default`` at home/root). This makes the server
 trivial to wire into a Claude Code / Claude Desktop MCP config block while
 staying fully injectable from tests.
@@ -30,6 +30,9 @@ ENV_LLM_MODEL = "HANDOFF_LLM_MODEL"
 ENV_LLM_BASE_URL = "HANDOFF_LLM_BASE_URL"
 ENV_LLM_API_KEY = "HANDOFF_LLM_API_KEY"
 ENV_AUTO_SYNC = "HANDOFF_AUTO_SYNC"
+# Set by Claude Code for the servers it launches: the directory the session was
+# opened in, which survives launchers that chdir (e.g. `uv run --directory`).
+ENV_CLAUDE_PROJECT_DIR = "CLAUDE_PROJECT_DIR"
 
 
 def _env_flag(name: str) -> bool:
@@ -73,20 +76,38 @@ def _git_toplevel_name(cwd: Path) -> str | None:
     return top.name or None
 
 
+def _session_dir() -> Path:
+    """The directory the client session is working in.
+
+    CLAUDE_PROJECT_DIR when it names an existing directory, else the process
+    cwd — which a launcher like ``uv run --directory`` points at the server's
+    own checkout rather than the user's project. Raises OSError if the cwd is
+    gone.
+    """
+
+    env = os.environ.get(ENV_CLAUDE_PROJECT_DIR)
+    if env:
+        path = Path(env).expanduser()
+        if path.is_dir():
+            return path
+    return Path.cwd()
+
+
 def _derive_project_from_cwd() -> str:
     """Deterministic per-repo namespace when HANDOFF_PROJECT is unset.
 
-    git-root basename > cwd basename; home or filesystem root (how Claude
-    Desktop launches stdio servers) keeps the historical ``default``.
+    Resolved against the session directory (see ``_session_dir``):
+    git-root basename > directory basename; home or filesystem root (how
+    Claude Desktop launches stdio servers) keeps the historical ``default``.
     """
 
     try:
-        cwd = Path.cwd()
+        base = _session_dir()
     except OSError:  # cwd deleted out from under the process
         return "default"
-    if cwd == Path.home() or cwd.parent == cwd:
+    if base == Path.home() or base.parent == base:
         return "default"
-    name = _git_toplevel_name(cwd) or cwd.name
+    name = _git_toplevel_name(base) or base.name
     name = re.sub(r"[\\/\s]+", "-", name).strip(".-")
     return name or "default"
 

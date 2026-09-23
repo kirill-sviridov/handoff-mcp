@@ -34,10 +34,11 @@ jobs:
       - name: Check the lockfile is in sync with pyproject.toml
         run: uv lock --check
 
-      - name: Install project into a venv
-        run: |
-          uv venv --python ${{ matrix.python-version }}
-          uv pip install -e ".[dev]"
+      # Install from uv.lock so the lint/type/test toolchain is the one the lock
+      # pins — an unpinned install let ruff 0.16 start formatting markdown code
+      # blocks and turned CI red with no code change.
+      - name: Install project into a venv (locked)
+        run: uv sync --locked --extra dev --python ${{ matrix.python-version }}
 
       - name: Ruff (lint + format check)
         run: |

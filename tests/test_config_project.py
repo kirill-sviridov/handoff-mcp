@@ -1,4 +1,7 @@
-"""Project-namespace derivation: env > git root > cwd basename > default."""
+"""Project-namespace derivation: env > git root > dir basename > default.
+
+The directory is CLAUDE_PROJECT_DIR when Claude Code sets it, else the cwd.
+"""
 
 from __future__ import annotations
 
@@ -9,12 +12,18 @@ from pathlib import Path
 
 import pytest
 
-from handoff_mcp.config import ENV_PROJECT, HandoffConfig, _derive_project_from_cwd
+from handoff_mcp.config import (
+    ENV_CLAUDE_PROJECT_DIR,
+    ENV_PROJECT,
+    HandoffConfig,
+    _derive_project_from_cwd,
+)
 
 
 @pytest.fixture(autouse=True)
 def _no_env_project(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(ENV_PROJECT, raising=False)
+    monkeypatch.delenv(ENV_CLAUDE_PROJECT_DIR, raising=False)
 
 
 def _git_init(path: Path) -> None:
@@ -100,3 +109,50 @@ def test_git_timeout_falls_back_to_cwd_basename(
 
     monkeypatch.setattr("handoff_mcp.config.subprocess.run", _boom)
     assert _derive_project_from_cwd() == "timeout-dir"
+
+
+def test_claude_project_dir_wins_over_server_cwd(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # `uv run --directory <server-repo>` chdirs into the server's own checkout;
+    # Claude Code still reports the real project in CLAUDE_PROJECT_DIR.
+    server_repo = tmp_path / "handoff-mcp"
+    server_repo.mkdir()
+    _git_init(server_repo)
+    project = tmp_path / "alfa-onboarding"
+    project.mkdir()
+    _git_init(project)
+    monkeypatch.chdir(server_repo)
+    monkeypatch.setenv(ENV_CLAUDE_PROJECT_DIR, str(project))
+    assert _derive_project_from_cwd() == "alfa-onboarding"
+
+
+def test_claude_project_dir_at_home_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    elsewhere = tmp_path / "server-checkout"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    monkeypatch.setenv(ENV_CLAUDE_PROJECT_DIR, str(tmp_path))
+    assert _derive_project_from_cwd() == "default"
+
+
+def test_missing_claude_project_dir_falls_back_to_cwd(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    d = tmp_path / "real-cwd"
+    d.mkdir()
+    monkeypatch.chdir(d)
+    monkeypatch.setenv(ENV_CLAUDE_PROJECT_DIR, str(tmp_path / "gone"))
+    assert _derive_project_from_cwd() == "real-cwd"
+
+
+def test_env_project_wins_over_claude_project_dir(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project = tmp_path / "from-claude"
+    project.mkdir()
+    monkeypatch.setenv(ENV_CLAUDE_PROJECT_DIR, str(project))
+    monkeypatch.setenv(ENV_PROJECT, "explicit-env")
+    assert HandoffConfig(vault_path=tmp_path / "v").project == "explicit-env"

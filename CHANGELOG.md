@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] — 2026-09-23
+
+### Fixed
+- **Every project filed under one namespace.** Project-from-cwd resolved
+  against the server process's cwd, which a launcher like
+  `uv run --directory <checkout>` points at the server's own checkout — so all
+  sessions landed in `handoff-mcp`, and subagents that don't pass `project`
+  split a session across two namespaces. The project directory now comes from
+  `CLAUDE_PROJECT_DIR` (set by Claude Code for the servers it launches) when it
+  names an existing directory, falling back to the cwd for other clients.
+  Existing misfiled notes are not moved.
+
 ## [0.4.0] — 2026-07-11
 
 ### Added
